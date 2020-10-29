@@ -10,7 +10,7 @@ export const mikroOrmConfig = {
   },
   dbName: "card-boardgame",
   user: "Sylvain",
-  password: "Hyperion30#",
+  password: "toto",
   debug: !__prod__,
   type: "postgresql",
   entities: [Card as AnyEntity],
