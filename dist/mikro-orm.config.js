@@ -11,7 +11,7 @@ exports.mikroOrmConfig = {
     },
     dbName: "card-boardgame",
     user: "Sylvain",
-    password: "Hyperion30#",
+    password: "toto",
     debug: !constants_1.__prod__,
     type: "postgresql",
     entities: [Card_1.Card],
