@@ -1,6 +1,5 @@
-import { AnyEntity, MikroORM } from "@mikro-orm/core";
+import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
-import { Card } from "./entities/Card";
 
 export const mikroOrmConfig = {
   migrations: {
@@ -13,7 +12,7 @@ export const mikroOrmConfig = {
   password: "toto",
   debug: !__prod__,
   type: "postgresql",
-  entities: [Card as AnyEntity],
+  entities: ['./dist/entities'],
   baseDir: process.cwd(),
 } as Parameters<typeof MikroORM.init>[0];
 

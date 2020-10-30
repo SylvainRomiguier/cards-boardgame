@@ -1,4 +1,5 @@
-import { Entity, PrimaryKey, Property } from "@mikro-orm/core";
+import {  Collection, Entity, ManyToMany, PrimaryKey, Property } from "@mikro-orm/core";
+import {Set} from './Set';
 
 @Entity()
 export class Card {
@@ -23,5 +24,8 @@ export class Card {
 
   @Property({type : 'text'})
   picture!: string;
+
+  @ManyToMany(() => Set, 'cards', { owner: true })
+  sets = new Collection<Set>(this);
 
 }

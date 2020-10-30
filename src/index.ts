@@ -15,7 +15,7 @@ const main = async () => {
   // });
 
   // await orm.em.persistAndFlush(card);
-  const cards = await orm.em.find(Card, {});
-  console.log(cards);
+  // const cards = await orm.em.find(Card, {});
+  // console.log(cards);
 };
 main().catch((err) => console.error(err));
