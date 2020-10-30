@@ -1,6 +1,6 @@
 import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
-import { Card } from "./entities/Card";
+// import { Card } from "./entities/Card";
 import { mikroOrmConfig } from "./mikro-orm.config";
 
 const main = async () => {
