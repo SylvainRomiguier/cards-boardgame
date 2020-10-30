@@ -20,14 +20,13 @@ export class Player {
   updatedAt = new Date();
 
   @Field()
-  @Property({type : 'text'})
+  @Property({type : 'text', unique: true})
   name!: string;
 
   @Field()
-  @Property({type : 'text'})
+  @Property({type : 'text', unique: true})
   email!: string;
 
-  @Field()
   @Property({type : 'text'})
   password!: string;
 
