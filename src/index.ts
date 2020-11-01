@@ -11,6 +11,7 @@ import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { CardResolver } from "./resolvers/card";
 import { PlayerResolver } from "./resolvers/player";
+import { MyContext } from "./types";
 
 const main = async () => {
   const orm = await MikroORM.init(mikroOrmConfig);
@@ -23,11 +24,17 @@ const main = async () => {
 
   app.use(
     session({
-      name: 'sylvain',
-      store: new RedisStore({ client: redisClient }),
+      name: "sylvain",
+      store: new RedisStore({ client: redisClient, disableTouch: true }),
       secret: "My wonderful secret from Langlade", //TODO à passer en variable d'environnement
       resave: false,
       saveUninitialized: false,
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+        httpOnly: true,
+        secure: __prod__, // only work in https in production
+        sameSite: "lax"
+      },
     })
   );
 
@@ -36,7 +43,7 @@ const main = async () => {
       resolvers: [CardResolver, PlayerResolver],
       validate: false,
     }),
-    context: () => ({ em: orm.em }),
+    context: ({req, res}): MyContext => ({ em: orm.em, req, res }),
   });
 
   apolloServer.applyMiddleware({ app });

@@ -64,6 +64,11 @@ class UserResponse {
 
 @Resolver()
 export class PlayerResolver {
+  @Query(() => Player, { nullable: true })
+  me(@Ctx() { em, req }: MyContext): Promise<Player | null> {
+    return em.findOne(Player, { id: req.session!.playerId });
+  }
+
   @Query(() => [Player])
   Players(@Ctx() { em }: MyContext): Promise<Player[]> {
     return em.find(Player, {});
@@ -141,7 +146,7 @@ export class PlayerResolver {
   @Mutation(() => UserResponse)
   async login(
     @Arg("playerFields") playerFields: NamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const player = await em.findOne(Player, {
       name: playerFields.name,
@@ -153,6 +158,8 @@ export class PlayerResolver {
       );
     const valid = await argon2.verify(player.password, playerFields.password);
     if (!valid) return errorsHandler("mot de passe", "Mot de passe invalide.");
+
+    req.session!.playerId = player.id;
 
     return { player };
   }
