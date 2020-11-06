@@ -12,6 +12,7 @@ import { buildSchema } from "type-graphql";
 import { CardResolver } from "./resolvers/card";
 import { PlayerResolver } from "./resolvers/player";
 import { MyContext } from "./types";
+import cors from "cors";
 
 const main = async () => {
   const orm = await MikroORM.init(mikroOrmConfig);
@@ -22,6 +23,8 @@ const main = async () => {
 
   const app = express();
 
+  app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+  
   app.use(
     session({
       name: "sylvain",
@@ -33,7 +36,7 @@ const main = async () => {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
         httpOnly: true,
         secure: __prod__, // only work in https in production
-        sameSite: "lax"
+        sameSite: "lax",
       },
     })
   );
@@ -43,10 +46,13 @@ const main = async () => {
       resolvers: [CardResolver, PlayerResolver],
       validate: false,
     }),
-    context: ({req, res}): MyContext => ({ em: orm.em, req, res }),
+    context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
   });
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({
+    app,
+    cors: false,
+  });
 
   app.listen(4000, () => {
     console.log("server up and running on localhost:4000");
