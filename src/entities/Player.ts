@@ -19,6 +19,10 @@ export class Player {
   @Property({type: 'date', onUpdate: () => new Date() })
   updatedAt = new Date();
 
+  @Field(() => String)
+  @Property({type: 'date'})
+  lastLogin = new Date();
+
   @Field()
   @Property({type : 'text', unique: true})
   name!: string;

@@ -13,6 +13,7 @@ import {
 import { MyContext } from "src/types";
 import argon2 from "argon2";
 import { validators, errorsHandler } from "../services";
+import { COOKIE_NAME } from "../constants";
 
 @InputType()
 class UserInput {
@@ -90,10 +91,13 @@ export class PlayerResolver {
     const hashedPassword = await argon2.hash(playerFields.password);
     const playerNameErrors = validators.playerNameValidate(playerFields.name);
     const passwordErrors = validators.passwordValidate(playerFields.password);
+    const emailErrors = validators.emailValidate(playerFields.email);
     if (playerNameErrors.length > 0)
-      return errorsHandler("Nom d'utilisateur", playerNameErrors.join(", "));
+      return errorsHandler("playerName", playerNameErrors.join(", "));
     if (passwordErrors.length > 0)
-      return errorsHandler("Mot de passe", passwordErrors.join(", "));
+      return errorsHandler("password", passwordErrors.join(", "));
+    if (emailErrors.length > 0)
+      return errorsHandler("email", emailErrors.join(", "));
     const player = em.create(Player, {
       name: playerFields.name,
       email: playerFields.email,
@@ -104,12 +108,13 @@ export class PlayerResolver {
     try {
       await em.persistAndFlush(player);
     } catch (err) {
-      if (err.detail.includes("existe déjà"))
-        return errorsHandler(
-          "Nom d'utilisateur/Adresse email",
-          "Cette valeur existe déjà."
-        );
-      return errorsHandler("Erreur inconnue", err.detail ? err.detail : err);
+      if (err.code === "23505") {
+        if (err.constraint === "player_name_unique")
+          return errorsHandler("playerName", "Ce nom existe déjà.");
+        if (err.constraint === "player_email_unique")
+          return errorsHandler("email", "Cet email existe déjà.");
+      }
+      return errorsHandler("playerName", err.detail ? err.detail : err);
     }
     return { player };
   }
@@ -152,15 +157,23 @@ export class PlayerResolver {
       name: playerFields.name,
     });
     if (!player)
-      return errorsHandler(
-        "nom d'utilisateur",
-        "Ce nom d'utilisateur n'existe pas."
-      );
+      return errorsHandler("playerName", "Ce nom d'utilisateur n'existe pas.");
     const valid = await argon2.verify(player.password, playerFields.password);
-    if (!valid) return errorsHandler("mot de passe", "Mot de passe invalide.");
-
+    if (!valid) return errorsHandler("password", "Mot de passe invalide.");
+    player.lastLogin = new Date();
+    await em.persistAndFlush(player);
     req.session!.playerId = player.id;
 
     return { player };
+  }
+
+  @Mutation (() => Boolean)
+  logout(
+    @Ctx() {req, res}: MyContext
+  ) {
+    return new Promise(resolve => req.session?.destroy(err => {
+      res.clearCookie(COOKIE_NAME);
+      resolve(err === null);
+    }));
   }
 }
