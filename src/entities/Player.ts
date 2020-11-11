@@ -42,6 +42,10 @@ export class Player {
   @Property({nullable: true})
   rank?: number;
 
+  @Field(() => Boolean)
+  @Property({type: 'boolean'})
+  active = false;
+
   @ManyToMany(() => Play, 'players', {owner: true})
   plays = new Collection<Play>(this);
 

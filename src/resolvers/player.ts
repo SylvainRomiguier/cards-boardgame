@@ -13,7 +13,9 @@ import {
 import { MyContext } from "src/types";
 import argon2 from "argon2";
 import { validators, errorsHandler } from "../services";
-import { COOKIE_NAME } from "../constants";
+import { ACTIVATE_ACCOUNT_PREFIX, COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../constants";
+import { SendEmail } from "../utils/sendEmail";
+import { v4 } from "uuid";
 
 @InputType()
 class UserInput {
@@ -65,6 +67,33 @@ class UserResponse {
 
 @Resolver()
 export class PlayerResolver {
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email") email: string,
+    @Ctx() { em, redis }: MyContext
+  ) {
+    const player = await em.findOne(Player, { email });
+    if (!player) {
+      return false;
+    }
+
+    const token = v4();
+    await redis.set(
+      `${FORGET_PASSWORD_PREFIX}${token}`,
+      player.id,
+      "ex",
+      1000 * 60 * 10
+    ); // 10 minutes expiration token to change the password
+
+    await SendEmail({
+      to: player.email,
+      subject: "Change your password",
+      contentHTML: `<a href='http://localhost:3000/change-password/${token}'>reset password</a>`,
+    });
+
+    return true;
+  }
+
   @Query(() => Player, { nullable: true })
   me(@Ctx() { em, req }: MyContext): Promise<Player | null> {
     return em.findOne(Player, { id: req.session!.playerId });
@@ -86,7 +115,7 @@ export class PlayerResolver {
   @Mutation(() => UserResponse)
   async createPlayer(
     @Arg("playerFields") playerFields: UserInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, redis }: MyContext
   ): Promise<UserResponse> {
     const hashedPassword = await argon2.hash(playerFields.password);
     const playerNameErrors = validators.playerNameValidate(playerFields.name);
@@ -104,6 +133,7 @@ export class PlayerResolver {
       password: hashedPassword,
       avatar: playerFields.avatar ? playerFields.avatar : null,
       rank: 1,
+      active: false,
     });
     try {
       await em.persistAndFlush(player);
@@ -116,6 +146,20 @@ export class PlayerResolver {
       }
       return errorsHandler("playerName", err.detail ? err.detail : err);
     }
+    const token = v4();
+    await redis.set(
+      `${ACTIVATE_ACCOUNT_PREFIX}${token}`,
+      player.id,
+      "ex",
+      1000 * 60 * 10
+    ); // 10 minutes expiration token to activate the account
+
+    await SendEmail({
+      to: player.email,
+      subject: "Card Board Game, activate your account",
+      contentHTML: `<a href='http://localhost:3000/activate-account/${token}'>Yes I want to be a part of it !</a>`,
+    });
+    
     return { player };
   }
 
@@ -155,9 +199,13 @@ export class PlayerResolver {
   ): Promise<UserResponse> {
     const player = await em.findOne(Player, {
       name: playerFields.name,
+      active: true,
     });
     if (!player)
-      return errorsHandler("playerName", "Ce nom d'utilisateur n'existe pas.");
+      return errorsHandler(
+        "playerName",
+        "Ce compte n'existe pas ou n'est pas activé."
+      );
     const valid = await argon2.verify(player.password, playerFields.password);
     if (!valid) return errorsHandler("password", "Mot de passe invalide.");
     player.lastLogin = new Date();
@@ -167,13 +215,13 @@ export class PlayerResolver {
     return { player };
   }
 
-  @Mutation (() => Boolean)
-  logout(
-    @Ctx() {req, res}: MyContext
-  ) {
-    return new Promise(resolve => req.session?.destroy(err => {
-      res.clearCookie(COOKIE_NAME);
-      resolve(err === null);
-    }));
+  @Mutation(() => Boolean)
+  logout(@Ctx() { req, res }: MyContext) {
+    return new Promise((resolve) =>
+      req.session?.destroy((err) => {
+        res.clearCookie(COOKIE_NAME);
+        resolve(err === null);
+      })
+    );
   }
 }

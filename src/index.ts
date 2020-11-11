@@ -3,10 +3,9 @@ import { MikroORM } from "@mikro-orm/core";
 import { __prod__, COOKIE_NAME } from "./constants";
 import { mikroOrmConfig } from "./mikro-orm.config";
 import express from "express";
-import redis from "redis";
+import redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
-
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { CardResolver } from "./resolvers/card";
@@ -19,7 +18,7 @@ const main = async () => {
   const orm = await MikroORM.init(mikroOrmConfig);
  
   const RedisStore = connectRedis(session);
-  const redisClient = redis.createClient();
+  const redisClient = new redis();
 
   const app = express();
 
@@ -48,7 +47,7 @@ const main = async () => {
       resolvers: [CardResolver, PlayerResolver],
       validate: false,
     }),
-    context: ({ req, res }): MyContext => ({ em: orm.em, req, res }),
+    context: ({ req, res }): MyContext => ({ em: orm.em, req, res, redis: redisClient }),
   });
 
   apolloServer.applyMiddleware({
