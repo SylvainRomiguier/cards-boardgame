@@ -13,6 +13,7 @@ import { CardResolver } from "./resolvers/card";
 import { PlayerResolver } from "./resolvers/player";
 import { MyContext } from "./types";
 import cors from "cors";
+import path from "path";
 
 const main = async () => {
   const orm = await MikroORM.init(mikroOrmConfig);
@@ -21,6 +22,8 @@ const main = async () => {
   const redisClient = redis.createClient();
 
   const app = express();
+
+  app.use('/assets', express.static(path.join(__dirname, '..', "assets")));
 
   app.use(cors({ origin: "http://localhost:3000", credentials: true }));
   
