@@ -13,7 +13,13 @@ import {
 import { MyContext } from "src/types";
 import argon2 from "argon2";
 import { validators, errorsHandler } from "../services";
-import { ACTIVATE_ACCOUNT_PREFIX, COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../constants";
+
+import {
+  ACTIVATE_ACCOUNT_PREFIX,
+  COOKIE_NAME,
+  FORGET_PASSWORD_PREFIX,
+} from "../constants";
+
 import { SendEmail } from "../utils/sendEmail";
 import { v4 } from "uuid";
 
@@ -67,6 +73,7 @@ class UserResponse {
 
 @Resolver()
 export class PlayerResolver {
+
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg("email") email: string,
@@ -90,6 +97,52 @@ export class PlayerResolver {
       subject: "Change your password",
       contentHTML: `<a href='http://localhost:3000/change-password/${token}'>reset password</a>`,
     });
+
+    return true;
+  }
+
+
+  @Mutation(() => Boolean)
+  async changePassword(
+    @Arg("token") token: string,
+    @Arg("newPassword") newPassword: string,
+    @Ctx() { em, redis }: MyContext
+  ) {
+    const playerId = await redis.get(`${FORGET_PASSWORD_PREFIX}${token}`);
+
+    if (playerId === null) {
+      return false;
+    } else {
+      const player = await em.findOne(Player, { id: parseInt(playerId, 10) });
+      if (player) {
+        player.password = await argon2.hash(newPassword);
+        em.persistAndFlush(player);
+      } else {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async activateAccount(
+    @Arg("token") token: string,
+    @Ctx() { em, redis }: MyContext
+  ) {
+    const playerId = await redis.get(`${ACTIVATE_ACCOUNT_PREFIX}${token}`);
+
+    if (playerId === null) {
+      return false;
+    } else {
+      const player = await em.findOne(Player, { id: parseInt(playerId, 10) });
+      if (player) {
+        player.active = true;
+        em.persistAndFlush(player);
+      } else {
+        return false;
+      }
+    }
 
     return true;
   }
@@ -159,7 +212,7 @@ export class PlayerResolver {
       subject: "Card Board Game, activate your account",
       contentHTML: `<a href='http://localhost:3000/activate-account/${token}'>Yes I want to be a part of it !</a>`,
     });
-    
+
     return { player };
   }
 
