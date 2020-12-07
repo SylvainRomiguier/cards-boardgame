@@ -121,8 +121,6 @@ export class PlayerResolver {
         return false;
       }
     }
-
-    return true;
   }
 
   @Mutation(() => Boolean)
