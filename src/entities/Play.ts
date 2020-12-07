@@ -1,4 +1,5 @@
-import { Collection, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryKey, Property } from "@mikro-orm/core";
+import { Field } from "type-graphql";
+import {Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, ManyToMany, Column} from "typeorm";
 import { Player } from "./Player";
 import { Turn } from "./Turn";
 import { Set } from "./Set";
@@ -6,22 +7,29 @@ import { Set } from "./Set";
 @Entity()
 export class Play {
 
-  @PrimaryKey()
+  @Field()
+  @PrimaryGeneratedColumn()
   id!: number;
 
-  @Property({type : 'date'})
-  createdAt = new Date();
+  @Field(() => String)
+  @CreateDateColumn()
+  createdAt: Date;
 
-  @Property({type: 'date', onUpdate: () => new Date() })
-  updatedAt = new Date();
-
-  @ManyToOne(() => Set)
-  set!: Set;
-
-  @ManyToMany(() => Player, player => player.plays)
-  players = new Collection<Player>(this);
+  @Field(() => String)
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => Turn, turn => turn.play)
-  turns = new Collection<Turn>(this);
+  turns: Turn[];
+
+  @ManyToOne(() => Set, set => set.plays)
+  set!: Set;
+
+  @Field()
+  @Column()
+  setId: number;
+
+  @ManyToMany(() => Player, player => player.plays)
+  players: Player[];
 
 }

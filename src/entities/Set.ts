@@ -1,28 +1,30 @@
 import {
-  Collection,
   Entity,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
   ManyToMany,
   OneToMany,
-  PrimaryKey,
-  Property,
-} from "@mikro-orm/core";
+  JoinTable,
+} from "typeorm";
 import { Card } from "./Card";
 import { Play } from "./Play";
 
 @Entity()
 export class Set {
-  @PrimaryKey()
+  @PrimaryGeneratedColumn()
   id!: number;
 
-  @Property({ type: "date" })
-  createdAt = new Date();
+  @CreateDateColumn()
+  createdAt: Date;
 
-  @Property({ type: "date", onUpdate: () => new Date() })
-  updatedAt = new Date();
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-  @OneToMany({ entity: () => Play, mappedBy: 'set', orphanRemoval: false })
-  plays = new Collection<Play>(this);
+  @OneToMany(() => Play, (play) => play.set)
+  plays: Play[];
 
-  @ManyToMany(() => Card, card => card.sets)
-  cards = new Collection<Card>(this);
+  @ManyToMany(() => Card, (card) => card.sets)
+  @JoinTable()
+  cards: Card[];
 }

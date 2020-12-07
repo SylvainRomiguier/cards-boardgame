@@ -1,4 +1,4 @@
-export const playerNameValidate = (playerName: string):string[] => {
+export const nameValidate = (playerName: string):string[] => {
   const messages: string[] = [];
   if (playerName.length < 3)
     messages.push("Le nom d'utilisateur doit comporter au moins 3 caractères");

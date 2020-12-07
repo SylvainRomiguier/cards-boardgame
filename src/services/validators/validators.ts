@@ -1,5 +1,5 @@
-import {playerNameValidate} from "./playerName";
-import {passwordValidate} from "./playerPassword";
-import {emailValidate} from "./playerEmail";
+import {nameValidate} from "./name";
+import {passwordValidate} from "./password";
+import {emailValidate} from "./email";
 
-export default {playerNameValidate, passwordValidate, emailValidate};
+export default {nameValidate, passwordValidate, emailValidate};

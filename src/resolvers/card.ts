@@ -1,60 +1,56 @@
 import { Card } from "../entities/Card";
-import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
-import { MyContext } from "src/types";
+import { Arg, Int, Mutation, Query, Resolver, UseMiddleware } from "type-graphql";
+import { isAuth } from "../middleware/isAuth";
+import { isAdmin } from "../middleware/isAdmin";
 
 @Resolver()
 export class CardResolver {
+
   @Query(() => [Card])
-  cards(@Ctx() { em }: MyContext): Promise<Card[]> {
-    return em.find(Card, {});
+  @UseMiddleware(isAuth)
+  cards(): Promise<Card[]> {
+    return Card.find();
   }
 
   @Query(() => Card, { nullable: true })
-  card(
-    @Arg("id", () => Int) id: number,
-    @Ctx() { em }: MyContext
-  ): Promise<Card | null> {
-    return em.findOne(Card, { id });
+  @UseMiddleware(isAuth)
+  card(@Arg("id", () => Int) id: number): Promise<Card | undefined> {
+    return Card.findOne({ where: { id } });
   }
 
   @Mutation(() => Card)
+  @UseMiddleware(isAuth)
+  @UseMiddleware(isAdmin)
   async createCard(
     @Arg("title") title: string,
     @Arg("description") text: string,
     @Arg("value") value: number,
-    @Arg("picture") picture: string,
-    @Ctx() { em }: MyContext
+    @Arg("picture") picture: string
   ): Promise<Card | null> {
-    const card = em.create(Card, { title, text, value, picture });
-    await em.persistAndFlush(card);
-    return card;
+    return Card.create({ title, text, value, picture }).save();
   }
 
   @Mutation(() => Card, { nullable: true })
+  @UseMiddleware(isAuth)
+  @UseMiddleware(isAdmin)
   async updateCard(
     @Arg("id", () => Int) id: number,
     @Arg("title") title: string,
     @Arg("description") text: string,
     @Arg("value") value: number,
-    @Arg("picture") picture: string,
-    @Ctx() { em }: MyContext
+    @Arg("picture") picture: string
   ): Promise<Card | null> {
-    const card = await em.findOne(Card, { id });
+    const card = await Card.findOne({ where: { id } });
     if (!card) return null;
-    card.title = title;
-    card.text = text;
-    card.value = value;
-    card.picture = picture;
-    await em.persistAndFlush(card);
+    await Card.update({ id }, { title, text, value, picture });
     return card;
   }
 
   @Mutation(() => Boolean)
-  async removeCard(
-    @Arg("id", () => Int) id: number,
-    @Ctx() { em }: MyContext
-  ): Promise<boolean> {
-    em.nativeDelete(Card, {id});
+  @UseMiddleware(isAuth)
+  @UseMiddleware(isAdmin)
+  async removeCard(@Arg("id", () => Int) id: number): Promise<boolean> {
+    Card.delete({ id });
     return true;
   }
 }

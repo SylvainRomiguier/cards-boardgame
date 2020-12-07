@@ -1,30 +1,42 @@
-import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";
+import { Field } from "type-graphql";
+import {Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, Column, ManyToMany, JoinTable} from "typeorm";
 import { Card } from "./Card";
 import { Play } from "./Play";
 import { Player } from "./Player";
 
 @Entity()
 export class Turn {
-  @PrimaryKey()
+  @Field()
+  @PrimaryGeneratedColumn()
   id!: number;
 
-  @Property({ type: "date" })
-  createdAt = new Date();
+  @Field(() => String)
+  @CreateDateColumn()
+  createdAt: Date;
 
-  @Property({ type: "date", onUpdate: () => new Date() })
-  updatedAt = new Date();
+  @Field(() => String)
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-  @ManyToOne(() => Play)
+  @Field()
+  @Column()
+  playId: number;
+
+  @ManyToOne(() => Play, play => play.turns)
   play!: Play;
 
-  @ManyToOne(() => Player)
+  @Field()
+  @Column()
+  playerId: number;
+
+  @ManyToOne(() => Player, player => player.turns)
   player!: Player;
 
-  @ManyToOne(() => Card)
-  cardInHand!: Card;
-  @ManyToOne(() => Card)
-  cardDrafted!: Card;
-  @ManyToOne(() => Card)
-  cardPlayed!: Card;
- 
+  @ManyToMany(() => Card, cardPlayed => cardPlayed.turnsPlayed)
+  @JoinTable()
+  cardsPlayed: Card[];
+
+  @ManyToMany(() => Card, cardHanded => cardHanded.turnsHanded)
+  @JoinTable()
+  cardsHanded: Card[];
 }

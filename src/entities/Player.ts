@@ -1,55 +1,41 @@
-import { Collection, Entity, ManyToMany, OneToMany, PrimaryKey, Property } from "@mikro-orm/core";
+import {
+  Entity,
+  Column,
+  ManyToMany,
+  OneToMany,
+  JoinTable,
+  OneToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { ObjectType, Field, Int } from "type-graphql";
+import { User } from "./User";
 import { Play } from "./Play";
 import { Turn } from "./Turn";
 
 @ObjectType()
 @Entity()
-export class Player {
-
+export class Player extends User {
   @Field(() => Int)
-  @PrimaryKey()
+  @PrimaryGeneratedColumn()
   id!: number;
-
-  @Field(() => String)
-  @Property({type : 'date'})
-  createdAt = new Date();
-
-  @Field(() => String)
-  @Property({type: 'date', onUpdate: () => new Date() })
-  updatedAt = new Date();
-
-  @Field(() => String)
-  @Property({type: 'date'})
-  lastLogin = new Date();
-
-  @Field()
-  @Property({type : 'text', unique: true})
-  name!: string;
-
-  @Field()
-  @Property({type : 'text', unique: true})
-  email!: string;
-
-  @Property({type : 'text'})
-  password!: string;
-
-  @Field(() => String, {nullable: true})
-  @Property({type : 'text', nullable: true})
-  avatar?: string;
-
-  @Field(() => Int, {nullable: true})
-  @Property({nullable: true})
+  
+  @Field(() => Int, { nullable: true })
+  @Column({ nullable: true })
   rank?: number;
 
   @Field(() => Boolean)
-  @Property({type: 'boolean'})
+  @Column({ type: "boolean" })
   active = false;
 
-  @ManyToMany(() => Play, 'players', {owner: true})
-  plays = new Collection<Play>(this);
+  @OneToOne(() => User)
+  @JoinColumn()
+  user: User;
 
-  @OneToMany(() => Turn, turn => turn.player)
-  turns = new Collection<Turn>(this);
+  @ManyToMany(() => Play, (play) => play.players)
+  @JoinTable()
+  plays: Play[];
 
- }
+  @OneToMany(() => Turn, (turn) => turn.player)
+  turns: Turn[];
+}

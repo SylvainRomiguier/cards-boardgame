@@ -1,44 +1,46 @@
-import {
-  Collection,
-  Entity,
-  ManyToMany,
-  PrimaryKey,
-  Property,
-} from "@mikro-orm/core";
+import {Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, BaseEntity, ManyToMany} from "typeorm";
 import { Field, ObjectType, Int } from "type-graphql";
 import { Set } from "./Set";
+import { Turn } from "./Turn";
 
 @ObjectType()
 @Entity()
-export class Card {
+export class Card extends BaseEntity{
+
   @Field(() => Int)
-  @PrimaryKey()
+  @PrimaryGeneratedColumn()
   id!: number;
 
   @Field(() => String)
-  @Property({ type: "date" })
-  createdAt = new Date();
+  @CreateDateColumn()
+  createdAt: Date;
 
   @Field(() => String)
-  @Property({ type: "date", onUpdate: () => new Date() })
-  updatedAt = new Date();
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @Field()
-  @Property({ type: "text" })
+  @Column()
   title!: string;
 
   @Field()
-  @Property({ type: "text" })
+  @Column()
   text!: string;
 
   @Field()
-  @Property()
+  @Column()
   value!: number;
 
   @Field()
-  @Property({ type: "text" })
+  @Column()
   picture!: string;
 
-  @ManyToMany(() => Set, "cards", { owner: true })
-  sets = new Collection<Set>(this);
+  @ManyToMany(() => Set, set => set.cards)
+  sets: Set[];
+
+  @ManyToMany(() => Turn, turn => turn.cardsPlayed)
+  turnsPlayed: Turn[];
+
+  @ManyToMany(() => Turn, turn => turn.cardsHanded)
+  turnsHanded: Turn[];
 }
